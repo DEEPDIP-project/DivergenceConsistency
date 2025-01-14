@@ -1,5 +1,9 @@
 cff-version: 1.2.0
 message: "If you use this work, please cite it using the following information."
+url: "https://github.com/agdestein/DivergenceConsistency"
+version: "1.0.0"
+type: software
+title: "PaperDC"
 authors:
   - family-names: "Agdestein"
     given-names: "Syver Døving"
@@ -7,17 +11,32 @@ authors:
   - family-names: "Sanderse"
     given-names: "Benjamin"
     orcid: "https://orcid.org/0000-0001-9483-1988"
-title: "Discretize first, filter next: Learning divergence-consistent closure models for large-eddy simulation"
-doi: "10.1016/j.jcp.2024.113577"
-date-released: "2024-11-15"
-url: "https://www.sciencedirect.com/science/article/pii/S0021999124008258"
-abstract: |
-  We propose a new neural network based large eddy simulation framework for the incompressible Navier-Stokes equations based on the paradigm “discretize first, filter and close next”. This leads to full model-data consistency and allows for employing neural closure models in the same environment as where they have been trained. Since the LES discretization error is included in the learning process, the closure models can learn to account for the discretization.
-  Furthermore, we employ a divergence-consistent discrete filter defined through face-averaging and provide novel theoretical and numerical filter analysis. This filter preserves the discrete divergence-free constraint by construction, unlike general discrete filters such as volume-averaging filters. We show that using a divergence-consistent LES formulation coupled with a convolutional neural closure model produces stable and accurate results for both a-priori and a-posteriori training, while a general (divergence-inconsistent) LES model requires a-posteriori training or other stability-enforcing measures.
-keywords:
-  - "Discrete filtering"
-  - "Closure modeling"
-  - "Divergence-consistency"
-  - "Large-eddy simulation"
-  - "Neural ODE"
-  - "A-posteriori training"
+preferred-citation:
+    type: article
+    authors:
+      - family-names: "Agdestein"
+        given-names: "Syver Døving"
+        orcid: "https://orcid.org/0000-0002-1589-2916"
+      - family-names: "Sanderse"
+        given-names: "Benjamin"
+        orcid: "https://orcid.org/0000-0001-9483-1988"
+    title: "Discretize first, filter next: Learning divergence-consistent closure models for large-eddy simulation"
+    doi: "10.1016/j.jcp.2024.113577"
+    date-released: "2024-11-15"
+    journal: "Journal of Computational Physics"
+    url: "https://www.sciencedirect.com/science/article/pii/S0021999124008258"
+    month: 11
+    year: 2025
+    issn: "0021-9991"
+    volume: 522
+    pages: 113577
+    abstract: |
+      We propose a new neural network based large eddy simulation framework for the incompressible Navier-Stokes equations based on the paradigm “discretize first, filter and close next”. This leads to full model-data consistency and allows for employing neural closure models in the same environment as where they have been trained. Since the LES discretization error is included in the learning process, the closure models can learn to account for the discretization.
+      Furthermore, we employ a divergence-consistent discrete filter defined through face-averaging and provide novel theoretical and numerical filter analysis. This filter preserves the discrete divergence-free constraint by construction, unlike general discrete filters such as volume-averaging filters. We show that using a divergence-consistent LES formulation coupled with a convolutional neural closure model produces stable and accurate results for both a-priori and a-posteriori training, while a general (divergence-inconsistent) LES model requires a-posteriori training or other stability-enforcing measures.
+    keywords:
+      - "Discrete filtering"
+      - "Closure modeling"
+      - "Divergence-consistency"
+      - "Large-eddy simulation"
+      - "Neural ODE"
+      - "A-posteriori training"
