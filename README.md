@@ -10,5 +10,5 @@ See [LaTeXFiles](LaTeXFiles/main.tex) for the source files of the paper.
 ## External links
 
 - [Published version](https://www.sciencedirect.com/science/article/pii/S0021999124008258)
-- [ArXiv preprint](https://arxiv.org/abs/2106.01994)
+- [ArXiv preprint](https://arxiv.org/abs/2403.18088)
 - [IncompressibleNavierStokes.jl](https://github.com/agdestein/IncompressibleNavierStokes.jl): Incompressible Navier-Stokes solver used for simulations.
