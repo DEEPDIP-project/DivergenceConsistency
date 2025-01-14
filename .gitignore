@@ -1,0 +1,10 @@
+.vscode
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+*Manifest.toml
+*output/
+*.swp
+*.un~
+*.DS_Store
+*.out
