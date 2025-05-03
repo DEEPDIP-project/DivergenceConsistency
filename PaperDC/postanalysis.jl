@@ -136,11 +136,11 @@ params = (;
     lims = (T(0), T(1)),
     Re = T(6e3),
     tburn = T(0.5),
-    tsim = T(5),
-    savefreq = 50,
-    ndns = 4096,
-    nles = [32, 64, 128, 256],
-    filters = (FaceAverage(), VolumeAverage()),
+    tsim = T(2),
+    savefreq = 100,
+    ndns = 64,
+    nles = [32],
+    filters = (FaceAverage(),),
     backend,
     icfunc = (setup, psolver, rng) -> random_field(setup, T(0); kp = 20, psolver, rng),
     method = RKMethods.Wray3(; T),
@@ -230,9 +230,8 @@ end
 # Train
 let
     dotrain = false
-    nepoch = 50
-    # niter = 200
-    niter = nothing
+    nepoch = 10
+    niter = 10
     dotrain && trainprior(;
         params,
         priorseed = seeds.prior,
@@ -253,7 +252,7 @@ let
         displayref = true,
         displayupdates = true, # Set to `true` if using CairoMakie
         nupdate_callback = 20,
-        loadcheckpoint = false,
+        loadcheckpoint = true,
         nepoch,
         niter,
     )
@@ -328,7 +327,7 @@ projectorders = ProjectOrder.First, ProjectOrder.Last
 # Train
 let
     dotrain = false
-    nepoch = 10
+    nepoch = 1
     dotrain && trainpost(;
         params,
         projectorders,
@@ -339,20 +338,20 @@ let
         dns_seeds_train,
         dns_seeds_valid,
         nsubstep = 5,
-        nunroll = 10,
+        nunroll = 5,
         ntrajectory = 5,
         closure,
         θ_start = θ_cnn_prior,
         opt = Adam(T(1e-4)),
         λ = T(5e-8),
         scheduler = CosAnneal(; l0 = T(1e-6), l1 = T(1e-4), period = nepoch),
-        nunroll_valid = 50,
+        nunroll_valid = 5,
         nupdate_callback = 10,
         displayref = false,
         displayupdates = true,
         loadcheckpoint = false,
         nepoch,
-        niter = 100,
+        niter = 1,
     )
 end
 
@@ -442,7 +441,7 @@ smag = loadsmagorinsky(outdir, params.nles, params.filters, projectorders)
 # Extract coefficients
 θ_smag = getfield.(smag, :θ)
 
-θ_smag |> x -> reshape(x, :, 4)
+θ_smag |> x -> reshape(x, :, 2)
 
 # Computational time
 getfield.(smag, :comptime)
@@ -468,7 +467,7 @@ let
         setup = getsetup(; params, nles)
         data = map(s -> namedtupleload(getdatafile(outdir, nles, Φ, s)), dns_seeds_test)
         testset = create_io_arrays(data, setup)
-        i = 1:100
+        i = 1:length(data)
         u, c = testset.u[:, :, :, i], testset.c[:, :, :, i]
         testset = (u, c) |> device
         err = create_relerr_prior(closure, testset...)
@@ -491,7 +490,7 @@ let
     sample = namedtupleload(
         getdatafile(outdir, params.nles[1], params.filters[1], dns_seeds_test[1]),
     )
-    sample.t[100]
+    sample.t[end]
 end
 
 let
@@ -499,8 +498,8 @@ let
     epost = (;
         nomodel = zeros(T, s),
         smag = zeros(T, s),
-        cnn_prior = zeros(T, s),
-        cnn_post = zeros(T, s),
+        model_prior = zeros(T, s),
+        model_post = zeros(T, s),
     )
     for (iorder, projectorder) in enumerate(projectorders),
         (ifil, Φ) in enumerate(params.filters),
@@ -511,7 +510,7 @@ let
         setup = getsetup(; params, nles)
         psolver = psolver_spectral(setup)
         sample = namedtupleload(getdatafile(outdir, nles, Φ, dns_seeds_test[1]))
-        it = 1:100
+        it = 1:length(sample.t)
         data = (;
             u = selectdim(sample.u, ndims(sample.u), it) |> collect |> device,
             t = sample.t[it],
@@ -547,8 +546,8 @@ let
             closure_model = wrappedclosure(closure, setup),
             nsubstep,
         )
-        epost.cnn_prior[I] = err(device(θ_cnn_prior[ig, ifil]))
-        epost.cnn_post[I] = err(device(θ_cnn_post[I]))
+        epost.model_prior[I] = err(device(θ_cnn_prior[ig, ifil]))
+        epost.model_post[I] = err(device(θ_cnn_post[I]))
         clean()
     end
     jldsave(joinpath(outdir, "epost.jld2"); epost...)
@@ -558,8 +557,8 @@ epost = namedtupleload(joinpath(outdir, "epost.jld2"))
 
 epost.nomodel
 epost.smag
-epost.cnn_prior
-epost.cnn_post
+epost.model_prior
+epost.model_post
 
 ########################################################################## #src
 
@@ -610,6 +609,7 @@ with_theme(; palette) do
     doplot() || return
     fig = Figure(; size = (800, 300))
     linestyles = [:solid, :dash]
+    linestyles = [:solid]
     for (iorder, projectorder) in enumerate(projectorders)
         lesmodel = iorder == 1 ? "DIF" : "DCF"
         (; nles) = params
@@ -628,8 +628,8 @@ with_theme(; palette) do
         for (e, marker, label, color) in [
             (epost.nomodel, :circle, "No closure", Cycled(1)),
             (epost.smag, :utriangle, "Smagorinsky", Cycled(2)),
-            (epost.cnn_prior, :rect, "CNN (Lprior)", Cycled(3)),
-            (epost.cnn_post, :diamond, "CNN (Lpost)", Cycled(4)),
+            (epost.model_prior, :rect, "CNN (Lprior)", Cycled(3)),
+            (epost.model_post, :diamond, "CNN (Lpost)", Cycled(4)),
         ]
             for (ifil, linestyle) in enumerate(linestyles)
                 ifil == 2 && (label = nothing)
@@ -644,7 +644,8 @@ with_theme(; palette) do
     Legend(
         g[2, 1],
         map(s -> LineElement(; color = :black, linestyle = s), linestyles),
-        ["FA", "VA"];
+        #["FA", "VA"];
+        ["FA"];
         orientation = :horizontal,
         valign = :top,
     )
@@ -668,7 +669,7 @@ end
 
 let
     s = length(params.nles), length(params.filters), length(projectorders)
-    keys = [:ref, :nomodel, :smag, :cnn_prior, :cnn_post]
+    keys = [:ref, :nomodel, :smag, :model_prior, :model_post]
     divergencehistory = (; map(k -> k => fill(Point2f[], s), keys)...)
     energyhistory = (; map(k -> k => fill(Point2f[], s), keys)...)
     for (iorder, projectorder) in enumerate(projectorders),
@@ -736,8 +737,8 @@ let
         for (sym, closure_model, θ) in [
             (:nomodel, nothing, nothing),
             (:smag, smagorinsky_closure(setup), θ_smag[I]),
-            (:cnn_prior, wrappedclosure(closure, setup), device(θ_cnn_prior[ig, ifil])),
-            (:cnn_post, wrappedclosure(closure, setup), device(θ_cnn_post[I])),
+            (:model_prior, wrappedclosure(closure, setup), device(θ_cnn_prior[ig, ifil])),
+            (:model_post, wrappedclosure(closure, setup), device(θ_cnn_post[I])),
         ]
             _, results = solve_unsteady(;
                 setup = (; setup..., closure_model),
@@ -768,21 +769,21 @@ end
 energyhistory.ref .|> extrema
 energyhistory.nomodel .|> extrema
 energyhistory.smag .|> extrema
-energyhistory.cnn_prior .|> extrema
-energyhistory.cnn_post .|> extrema
+energyhistory.model_prior .|> extrema
+energyhistory.model_post .|> extrema
 
 # Check that divergence is within reasonable bounds
 divergencehistory.ref .|> extrema
 divergencehistory.nomodel .|> extrema
 divergencehistory.smag .|> extrema
-divergencehistory.cnn_prior .|> extrema
-divergencehistory.cnn_post .|> extrema
+divergencehistory.model_prior .|> extrema
+divergencehistory.model_post .|> extrema
 
 ########################################################################## #src
 
 # ### Plot energy evolution
 
-with_theme(; palette) do
+false && with_theme(; palette) do
     doplot() || return
     for (igrid, nles) in enumerate(params.nles)
         @info "Plotting energy evolution" nles
@@ -816,8 +817,8 @@ with_theme(; palette) do
             plots = [
                 (energyhistory.nomodel, :solid, 1, "No closure"),
                 (energyhistory.smag, :solid, 2, "Smagorinsky"),
-                (energyhistory.cnn_prior, :solid, 3, "CNN (prior)"),
-                (energyhistory.cnn_post, :solid, 4, "CNN (post)"),
+                (energyhistory.model_prior, :solid, 3, "CNN (prior)"),
+                (energyhistory.model_post, :solid, 4, "CNN (post)"),
                 (energyhistory.ref, :dash, 1, "Reference"),
             ]
             for (p, linestyle, i, label) in plots
@@ -925,8 +926,8 @@ with_theme(; palette) do
             )
             lines!(ax, divergencehistory.nomodel[I]; label = "No closure")
             lines!(ax, divergencehistory.smag[I]; label = "Smagorinsky")
-            lines!(ax, divergencehistory.cnn_prior[I]; label = "CNN (prior)")
-            lines!(ax, divergencehistory.cnn_post[I]; label = "CNN (post)")
+            lines!(ax, divergencehistory.model_prior[I]; label = "CNN (prior)")
+            lines!(ax, divergencehistory.model_post[I]; label = "CNN (post)")
             lines!(
                 ax,
                 divergencehistory.ref[I];
@@ -954,7 +955,7 @@ end
 let
     s = length(params.nles), length(params.filters), length(projectorders)
     temp = zeros(T, ntuple(Returns(0), params.D + 1))
-    keys = [:ref, :nomodel, :smag, :cnn_prior, :cnn_post]
+    keys = [:ref, :nomodel, :smag, :model_prior, :model_post]
     times = T[0.1, 0.5, 1.0, 5.0]
     itime_max_DIF = 3
     times_exact = copy(times)
@@ -1005,14 +1006,14 @@ let
             utimes[i].nomodel[I] = solve(getprev(i, :nomodel), tlims, nothing, nothing)
             utimes[i].smag[I] =
                 solve(getprev(i, :smag), tlims, smagorinsky_closure(setup), θ_smag[I])
-            utimes[i].cnn_prior[I] = solve(
-                getprev(i, :cnn_prior),
+            utimes[i].model_prior[I] = solve(
+                getprev(i, :model_prior),
                 tlims,
                 wrappedclosure(closure, setup),
                 device(θ_cnn_prior[igrid, ifil]),
             )
-            utimes[i].cnn_post[I] = solve(
-                getprev(i, :cnn_post),
+            utimes[i].model_post[I] = solve(
+                getprev(i, :model_post),
                 tlims,
                 wrappedclosure(closure, setup),
                 device(θ_cnn_post[I]),
@@ -1054,7 +1055,7 @@ with_theme(; palette) do
 
                 fields = map(
                     k -> solutions.u[itime][k][igrid, ifil, iorder] |> device,
-                    [:ref, :nomodel, :smag, :cnn_prior, :cnn_post],
+                    [:ref, :nomodel, :smag, :model_prior, :model_post],
                 )
                 specs = map(fields) do u
                     state = (; u)
@@ -1250,9 +1251,8 @@ with_theme(; palette) do
             for (u, title) in [
                 (utime.nomodel[igrid, ifil, 2], "No closure"),
                 (utime.nomodel[igrid, ifil, 2], "Smagorinsky (DCF)"),
-                # (utime.cnn_prior[igrid, ifil, 2], "CNN (prior, DCF)"),
-                (utime.cnn_post[igrid, ifil, 1], "CNN (post, DIF)"),
-                (utime.cnn_post[igrid, ifil, 2], "CNN (post, DCF)"),
+                (utime.model_post[igrid, ifil, 1], "CNN (post, DIF)"),
+                (utime.model_post[igrid, ifil, 2], "CNN (post, DCF)"),
                 (utime.ref[igrid, ifil, 2], "Reference"),
             ]
                 icol += 1
@@ -1295,14 +1295,14 @@ end
 # Plot vorticity
 let
     doplot() || return
-    nles = 64
+    nles = 32
     sample = namedtupleload(getdatafile(outdir, nles, FaceAverage(), dns_seeds_test[1]))
     setup = getsetup(; params, nles)
     u = selectdim(sample.u, ndims(sample.u), 1) |> collect |> device
     w = vorticity(u, setup) |> Array |> Observable
     title = sample.t[1] |> string |> Observable
     fig = heatmap(w; axis = (; title))
-    for i = 1:5:1000
+    for i = 1:1:length(sample.t)
         u = selectdim(sample.u, ndims(sample.u), i) |> collect |> device
         w[] = vorticity(u, setup) |> Array
         title[] = "t = $(round(sample.t[i]; digits = 2))"
