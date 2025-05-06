@@ -227,11 +227,11 @@ end
 
 # Parameter save files
 
-# Train
 let
     dotrain = false
-    nepoch = 10
-    niter = 10
+    nepoch = 100
+    niter = 200
+    niter = nothing
     dotrain && trainprior(;
         params,
         priorseed = seeds.prior,
@@ -246,17 +246,18 @@ let
         opt = Adam(T(1.0e-3)),
         λ = T(5.0e-5),
         # noiselevel = T(1e-3),
-        scheduler = CosAnneal(; l0 = T(1e-6), l1 = T(1e-3), period = nepoch),
-        nvalid = 64,
-        batchsize = 64,
+        #scheduler = CosAnneal(; l0 = T(1e-6), l1 = T(1e-3), period = nepoch),
+        nvalid = 32,
+        batchsize = 32,
         displayref = true,
         displayupdates = true, # Set to `true` if using CairoMakie
         nupdate_callback = 20,
-        loadcheckpoint = true,
+        loadcheckpoint = false,
         nepoch,
         niter,
     )
 end
+
 
 # Load learned parameters and training times
 priortraining = loadprior(outdir, params.nles, params.filters)
@@ -326,8 +327,8 @@ projectorders = ProjectOrder.First, ProjectOrder.Last
 
 # Train
 let
-    dotrain = false
-    nepoch = 1
+    dotrain = true
+    nepoch = 2
     dotrain && trainpost(;
         params,
         projectorders,
@@ -343,15 +344,15 @@ let
         closure,
         θ_start = θ_cnn_prior,
         opt = Adam(T(1e-4)),
-        λ = T(5e-8),
-        scheduler = CosAnneal(; l0 = T(1e-6), l1 = T(1e-4), period = nepoch),
+        #λ = T(5e-8),
+        #scheduler = CosAnneal(; l0 = T(1e-6), l1 = T(1e-4), period = nepoch),
         nunroll_valid = 5,
         nupdate_callback = 10,
         displayref = false,
         displayupdates = true,
         loadcheckpoint = false,
         nepoch,
-        niter = 1,
+        niter = 20,
     )
 end
 
@@ -952,6 +953,78 @@ end
 
 # ## Solutions at different times
 
+#let
+#    s = length(params.nles), length(params.filters), length(projectorders)
+#    temp = zeros(T, ntuple(Returns(0), params.D + 1))
+#    keys = [:ref, :nomodel, :smag, :model_prior, :model_post]
+#    times = T[0.1, 0.5, 1.0, 5.0]
+#    itime_max_DIF = 3
+#    times_exact = copy(times)
+#    utimes = map(t -> (; map(k -> k => fill(temp, s), keys)...), times)
+#    for (iorder, projectorder) in enumerate(projectorders),
+#        (ifil, Φ) in enumerate(params.filters),
+#        (igrid, nles) in enumerate(params.nles)
+#
+#        @info "Computing test solutions" projectorder Φ nles
+#        I = CartesianIndex(igrid, ifil, iorder)
+#        setup = getsetup(; params, nles)
+#        psolver = default_psolver(setup)
+#        sample = namedtupleload(getdatafile(outdir, nles, Φ, dns_seeds_test[1]))
+#        ustart = selectdim(sample.u, ndims(sample.u), 1) |> collect
+#        t = sample.t
+#        solve(ustart, tlims, closure_model, θ) =
+#            solve_unsteady(;
+#                setup = (; setup..., closure_model),
+#                ustart = device(ustart),
+#                tlims,
+#                method = RKProject(params.method, projectorder),
+#                psolver,
+#                θ,
+#            )[1].u |> Array
+#        t1 = t[1]
+#        for i in eachindex(times)
+#            # Only first times for First
+#            i > itime_max_DIF && projectorder == ProjectOrder.First && continue
+#
+#            # Time interval
+#            t0 = t1
+#            t1 = times[i]
+#
+#            # Adjust t1 to be exactly on a reference time
+#            it = findfirst(>(t1), t)
+#            if isnothing(it)
+#                # Not found: Final time
+#                it = length(t)
+#            end
+#            t1 = t[it]
+#            tlims = (t0, t1)
+#            times_exact[i] = t1
+#
+#            getprev(i, sym) = i == 1 ? ustart : utimes[i-1][sym][I]
+#
+#            # Compute fields
+#            utimes[i].ref[I] = selectdim(sample.u, ndims(sample.u), it) |> collect
+#            utimes[i].nomodel[I] = solve(getprev(i, :nomodel), tlims, nothing, nothing)
+#            utimes[i].smag[I] =
+#                solve(getprev(i, :smag), tlims, smagorinsky_closure(setup), θ_smag[I])
+#            utimes[i].model_prior[I] = solve(
+#                getprev(i, :model_prior),
+#                tlims,
+#                wrappedclosure(closure, setup),
+#                device(θ_cnn_prior[igrid, ifil]),
+#            )
+#            utimes[i].model_post[I] = solve(
+#                getprev(i, :model_post),
+#                tlims,
+#                wrappedclosure(closure, setup),
+#                device(θ_cnn_post[I]),
+#            )
+#        end
+#        clean()
+#    end
+#    jldsave("$outdir/solutions.jld2"; u = utimes, t = times_exact, itime_max_DIF)
+#end;
+#clean();
 let
     s = length(params.nles), length(params.filters), length(projectorders)
     temp = zeros(T, ntuple(Returns(0), params.D + 1))
@@ -971,8 +1044,9 @@ let
         sample = namedtupleload(getdatafile(outdir, nles, Φ, dns_seeds_test[1]))
         ustart = selectdim(sample.u, ndims(sample.u), 1) |> collect
         t = sample.t
-        solve(ustart, tlims, closure_model, θ) =
-            solve_unsteady(;
+
+        function solve(ustart, tlims, closure_model, θ)
+            result = solve_unsteady(;
                 setup = (; setup..., closure_model),
                 ustart = device(ustart),
                 tlims,
@@ -980,6 +1054,9 @@ let
                 psolver,
                 θ,
             )[1].u |> Array
+            #@info result
+            #Array(result)
+        end
         t1 = t[1]
         for i in eachindex(times)
             # Only first times for First

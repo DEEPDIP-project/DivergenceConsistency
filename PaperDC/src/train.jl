@@ -183,7 +183,7 @@ function trainpost(;
     θ_start,
     opt,
     λ = nothing,
-    scheduler,
+    scheduler = nothing,
     nunroll_valid,
     nupdate_callback,
     displayref,
@@ -228,7 +228,7 @@ function trainpost(;
             map(s -> namedtupleload(getdatafile(outdir, nles, Φ, s)), dns_seeds_valid)
         dataloader = create_dataloader_post(
             map(d -> (; d.u, d.t), data_train);
-            device,
+            device, 
             nunroll,
             ntrajectory,
         )
