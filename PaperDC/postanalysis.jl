@@ -459,8 +459,8 @@ getfield.(smag, :comptime) |> sum
 let
     eprior = (;
         nomodel = ones(T, length(params.nles)),
-        prior = zeros(T, size(θ_cnn_prior)),
-        post = zeros(T, size(θ_cnn_post)),
+        model_prior = zeros(T, size(θ_cnn_prior)),
+        model_post = zeros(T, size(θ_cnn_post)),
     )
     for (ifil, Φ) in enumerate(params.filters), (ig, nles) in enumerate(params.nles)
         @info "Computing a-priori errors" Φ nles
@@ -472,9 +472,9 @@ let
         u, c = testset.u[:, :, :, i], testset.c[:, :, :, i]
         testset = (u, c) |> device
         err = create_relerr_prior(closure, testset...)
-        eprior.prior[ig, ifil] = err(device(θ_cnn_prior[ig, ifil]))
+        eprior.model_prior[ig, ifil] = err(device(θ_cnn_prior[ig, ifil]))
         for iorder in eachindex(projectorders)
-            eprior.post[ig, ifil, iorder] = err(device(θ_cnn_post[ig, ifil, iorder]))
+            eprior.model_post[ig, ifil, iorder] = err(device(θ_cnn_post[ig, ifil, iorder]))
         end
     end
     jldsave(joinpath(outdir, "eprior.jld2"); eprior...)
@@ -587,9 +587,9 @@ with_theme(; palette) do
         )
         for (e, marker, label, color) in [
             (eprior.nomodel, :circle, "No closure", Cycled(1)),
-            (eprior.prior[:, ifil], :utriangle, "CNN (prior)", Cycled(2)),
-            (eprior.post[:, ifil, 1], :rect, "CNN (post, DIF)", Cycled(3)),
-            (eprior.post[:, ifil, 2], :diamond, "CNN (post, DCF)", Cycled(4)),
+            (eprior.model_prior[:, ifil], :utriangle, "CNN (prior)", Cycled(2)),
+            (eprior.model_post[:, ifil, 1], :rect, "CNN (post, DIF)", Cycled(3)),
+            (eprior.model_post[:, ifil, 2], :diamond, "CNN (post, DCF)", Cycled(4)),
         ]
             scatterlines!(params.nles, e; marker, color, label)
         end
