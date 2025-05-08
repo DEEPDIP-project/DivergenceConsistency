@@ -228,6 +228,7 @@ end
 # Parameter save files
 
 let
+    dotrain = true
     dotrain = false
     nepoch = 100
     niter = 200
@@ -328,6 +329,7 @@ projectorders = ProjectOrder.First, ProjectOrder.Last
 # Train
 let
     dotrain = true
+    dotrain = false
     nepoch = 2
     dotrain && trainpost(;
         params,
@@ -461,6 +463,7 @@ let
         nomodel = ones(T, length(params.nles)),
         model_prior = zeros(T, size(θ_cnn_prior)),
         model_post = zeros(T, size(θ_cnn_post)),
+        model_t_prior_inference = zeros(T, size(θ_cnn_prior)),
     )
     for (ifil, Φ) in enumerate(params.filters), (ig, nles) in enumerate(params.nles)
         @info "Computing a-priori errors" Φ nles
@@ -476,6 +479,7 @@ let
         for iorder in eachindex(projectorders)
             eprior.model_post[ig, ifil, iorder] = err(device(θ_cnn_post[ig, ifil, iorder]))
         end
+        eprior.model_t_prior_inference[ig, ifil] = compute_t_inference_prior(closure, device(θ_cnn_prior[ig, ifil]), testset...)
     end
     jldsave(joinpath(outdir, "eprior.jld2"); eprior...)
 end
@@ -501,6 +505,9 @@ let
         smag = zeros(T, s),
         model_prior = zeros(T, s),
         model_post = zeros(T, s),
+        nomodel_t_post_inference = zeros(T, s),
+        smag_t_post_inference = zeros(T, s),
+        model_t_post_inference = zeros(T, s),
     )
     for (iorder, projectorder) in enumerate(projectorders),
         (ifil, Φ) in enumerate(params.filters),
@@ -527,7 +534,7 @@ let
             closure_model = nothing,
             nsubstep,
         )
-        epost.nomodel[I] = err(nothing)
+        epost.nomodel[I], epost.nomodel_t_post_inference[I] = err(nothing)
         ## Smagorinsky
         err = create_relerr_post(;
             data,
@@ -537,7 +544,7 @@ let
             closure_model = smagorinsky_closure(setup),
             nsubstep,
         )
-        epost.smag[I] = err(θ_smag[I])
+        epost.smag[I], epost.smag_t_post_inference[I] = err(θ_smag[I])
         ## CNN
         err = create_relerr_post(;
             data,
@@ -547,8 +554,8 @@ let
             closure_model = wrappedclosure(closure, setup),
             nsubstep,
         )
-        epost.model_prior[I] = err(device(θ_cnn_prior[ig, ifil]))
-        epost.model_post[I] = err(device(θ_cnn_post[I]))
+        epost.model_prior[I], _ = err(device(θ_cnn_prior[ig, ifil]))
+        epost.model_post[I], epost.model_t_post_inference[I] = err(device(θ_cnn_post[I]))
         clean()
     end
     jldsave(joinpath(outdir, "epost.jld2"); epost...)

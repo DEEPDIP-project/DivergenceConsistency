@@ -84,5 +84,6 @@ export getdatafile, createdata, getsetup
 export trainprior, loadprior
 export trainpost, loadpost
 export trainsmagorinsky, loadsmagorinsky
+export compute_t_inference_prior
 
 end # module PaperDC

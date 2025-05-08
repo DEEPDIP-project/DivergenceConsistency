@@ -1,3 +1,6 @@
+
+using CUDA
+
 getdatafile(outdir, nles, filter, seed) =
     joinpath(outdir, "data", splatfileparts(; seed = repr(seed), filter, nles) * ".jld2")
 
@@ -151,7 +154,7 @@ function trainprior(;
             jldsave(checkfile; icheck = iepoch, callbackstate = c, trainstate = t)
         end
         θ = callbackstate.θmin # Use best θ instead of last θ
-        results = (; θ = Array(θ), comptime = time() - starttime, callbackstate.hist)
+        results = (; θ = Array(θ), comptime = time() - starttime, callbackstate.hist, time_per_epoch = (time() - starttime) / (nepoch-icheck))
         save_object(priorfile, results)
     end
     @info "Finished a-priori training."
@@ -279,7 +282,7 @@ function trainpost(;
             jldsave(checkfile; icheck = iepoch, callbackstate = c, trainstate = t)
         end
         θ = callbackstate.θmin # Use best θ instead of last θ
-        results = (; θ = Array(θ), comptime = time() - starttime)
+        results = (; θ = Array(θ), comptime = time() - starttime, time_per_epoch = (time() - starttime) / (nepoch-icheck))
         save_object(postfile, results)
     end
     @info "Finished a-posteriori training."
@@ -348,4 +351,20 @@ function trainsmagorinsky(;
         save_object(smagfile, results)
     end
     @info "Finished Smagorinsky training."
+end
+
+function compute_t_inference_prior(f, θ, x, y, nreps=1000)
+    size_in = size(x)
+    T = typeof(θ)
+    _ , t, _, _ = @timed begin
+        for i = 1:nreps
+            #if x isa CUDA.CuArray
+            #    x = CUDA.rand(T,size_in...) 
+            #else
+            #    x = rand(T,size_in...)
+            #end
+            f(x, θ)
+        end
+    end
+    return t / nreps
 end
