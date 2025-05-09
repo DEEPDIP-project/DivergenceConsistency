@@ -136,10 +136,10 @@ params = (;
     lims = (T(0), T(1)),
     Re = T(6e3),
     tburn = T(0.5),
-    tsim = T(2),
-    savefreq = 100,
-    ndns = 64,
-    nles = [32],
+    tsim = T(5),
+    savefreq = 50,
+    ndns = 4096,
+    nles = [128],
     filters = (FaceAverage(),),
     backend,
     icfunc = (setup, psolver, rng) -> random_field(setup, T(0); kp = 20, psolver, rng),
@@ -230,7 +230,7 @@ end
 let
     dotrain = true
     dotrain = false
-    nepoch = 100
+    nepoch = 10000
     niter = 200
     niter = nothing
     dotrain && trainprior(;
@@ -329,8 +329,7 @@ projectorders = ProjectOrder.First, ProjectOrder.Last
 # Train
 let
     dotrain = true
-    dotrain = false
-    nepoch = 2
+    nepoch = 100
     dotrain && trainpost(;
         params,
         projectorders,
@@ -424,7 +423,7 @@ end
 # Find one constant for each projection order, filter type, and grid size.
 
 let
-    dotrain = false
+    dotrain = true
     dotrain && trainsmagorinsky(;
         params,
         projectorders,

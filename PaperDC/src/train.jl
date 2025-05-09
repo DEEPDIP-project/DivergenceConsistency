@@ -114,6 +114,9 @@ function trainprior(;
             trainstate = (; optstate, θ, rng = Xoshiro(batchseed))
             callbackstate = callback(callbackstate, trainstate) # Initial callback
         end
+	nepoch0 = nepoch
+	nepoch = nepoch/(size(io_train.u,ndims(io_train.u))/batchsize)
+	@warn "actually doing $nepoch steps instead of $nepoch0"
         for iepoch = icheck+1:nepoch
             # (; trainstate, callbackstate) = train(;
             #     dataloader,
@@ -222,7 +225,7 @@ function trainpost(;
             setup,
             psolver,
             method = RKProject(params.method, projectorder),
-            closure,
+            closure_model = closure,
             nsubstep, # Time steps per loss evaluation
         )
         data_train =
