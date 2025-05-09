@@ -225,7 +225,7 @@ function trainpost(;
             setup,
             psolver,
             method = RKProject(params.method, projectorder),
-            closure_model = closure,
+            closure,
             nsubstep, # Time steps per loss evaluation
         )
         data_train =

@@ -86,3 +86,35 @@ observe_u(dns, psolver_dns, filters; PF, p, nupdate = 1) =
         # state[] = state[] # Save initial conditions
         results
     end
+
+
+function create_relerr_post_wt(; data, setup, method, psolver, closure_model, nsubstep = 1)
+    setup = (; setup..., closure_model)
+    (; Iu) = setup.grid
+    inside = Iu[1]
+    @assert all(==(inside), Iu)
+    (; u, t) = data
+    v = selectdim(u, ndims(u), 1) |> copy
+    cache = IncompressibleNavierStokes.ode_method_cache(method, setup)
+    function relerr_post(θ)
+        t0 = time()
+        T = eltype(u)
+        copyto!(v, selectdim(u, ndims(u), 1))
+        stepper = create_stepper(method; setup, psolver, u = v, temp = nothing, t = t[1])
+        e = zero(T)
+        for it = 2:length(t)
+            Δt = (t[it] - t[it-1]) / nsubstep
+            for isub = 1:nsubstep
+                stepper =
+                    IncompressibleNavierStokes.timestep!(method, stepper, Δt; θ, cache)
+            end
+            uref = view(u, inside, :, it)
+            ules = view(stepper.u, inside, :)
+            a = sum(abs2, ules - uref)
+            b = sum(abs2, uref)
+            e += sqrt(a) / sqrt(b)
+        end
+
+        return e / (length(t) - 1), time()-t0
+    end
+end

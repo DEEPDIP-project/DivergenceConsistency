@@ -136,10 +136,14 @@ params = (;
     lims = (T(0), T(1)),
     Re = T(6e3),
     tburn = T(0.5),
-    tsim = T(5),
-    savefreq = 50,
-    ndns = 4096,
-    nles = [128],
+    tsim = T(2),
+    savefreq = 100,
+    ndns = 1024,
+    nles = [32],
+    #tsim = T(5),
+    #savefreq = 50,
+    #ndns = 4096,
+    #nles = [128],
     filters = (FaceAverage(),),
     backend,
     icfunc = (setup, psolver, rng) -> random_field(setup, T(0); kp = 20, psolver, rng),
@@ -230,8 +234,7 @@ end
 let
     dotrain = true
     dotrain = false
-    nepoch = 10000
-    niter = 200
+    nepoch = 1000
     niter = nothing
     dotrain && trainprior(;
         params,
@@ -329,6 +332,7 @@ projectorders = ProjectOrder.First, ProjectOrder.Last
 # Train
 let
     dotrain = true
+    #dotrain = false
     nepoch = 100
     dotrain && trainpost(;
         params,
@@ -353,7 +357,7 @@ let
         displayupdates = true,
         loadcheckpoint = false,
         nepoch,
-        niter = 20,
+        niter = 1,
     )
 end
 
@@ -525,7 +529,7 @@ let
         nsubstep = 5
         method = RKProject(params.method, projectorder)
         ## No model
-        err = create_relerr_post(;
+        err = create_relerr_post_wt(;
             data,
             setup,
             psolver,
@@ -535,7 +539,7 @@ let
         )
         epost.nomodel[I], epost.nomodel_t_post_inference[I] = err(nothing)
         ## Smagorinsky
-        err = create_relerr_post(;
+        err = create_relerr_post_wt(;
             data,
             setup,
             psolver,
@@ -545,7 +549,7 @@ let
         )
         epost.smag[I], epost.smag_t_post_inference[I] = err(θ_smag[I])
         ## CNN
-        err = create_relerr_post(;
+        err = create_relerr_post_wt(;
             data,
             setup,
             psolver,

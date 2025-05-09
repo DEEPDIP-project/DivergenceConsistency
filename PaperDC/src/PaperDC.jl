@@ -85,5 +85,6 @@ export trainprior, loadprior
 export trainpost, loadpost
 export trainsmagorinsky, loadsmagorinsky
 export compute_t_inference_prior
+export create_relerr_post_wt
 
 end # module PaperDC
