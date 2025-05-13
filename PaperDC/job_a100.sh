@@ -19,6 +19,6 @@ module load juliaup/1.14.5-GCCcore-12.3.0
 julia --project=PaperDC -e 'using Pkg; Pkg.instantiate()'
 
 # julia --project prioranalysis.jl
-julia --project -t auto postanalysis.jl
+julia --project -t auto postanalysis_snel.jl
 
 # julia --project -t auto -e 'using Pkg; Pkg.update()'
