@@ -158,8 +158,8 @@ dns_seeds_valid = dns_seeds[ntrajectory-1:ntrajectory-1]
 dns_seeds_test = dns_seeds[ntrajectory:ntrajectory]
 
 # Create data
-docreatedata = false
 docreatedata = true
+docreatedata = false
 docreatedata && createdata(; params, seeds = dns_seeds, outdir, taskid)
 
 # Computational time
@@ -231,7 +231,7 @@ end
 
 let
     dotrain = true
-#    dotrain = false
+    dotrain = false
     nepoch = 1000
     niter = nothing
     dotrain && trainprior(;
@@ -325,12 +325,12 @@ end
 #
 # The time stepper `RKProject` allows for choosing when to project.
 
-projectorders = ProjectOrder.First, ProjectOrder.Last
+projectorders = [ProjectOrder.Last]
 
 # Train
 let
     dotrain = true
-    #dotrain = false
+    dotrain = false
     nepoch = 100
     dotrain && trainpost(;
         params,
@@ -368,7 +368,7 @@ posttraining = loadpost(outdir, params.nles, params.filters, projectorders)
 # Training times
 map(p -> p.comptime, posttraining) ./ 60
 map(p -> p.comptime, posttraining) |> sum |> x -> x / 60
-map(p -> p.comptime, posttraining) |> x -> reshape(x, :, 2) .|> x -> round(x; digits = 1)
+map(p -> p.comptime, posttraining) |> x -> reshape(x, :, 1) .|> x -> round(x; digits = 1)
 
 # ## Plot a-posteriori training history
 
@@ -426,6 +426,7 @@ end
 
 let
     dotrain = true
+    dotrain = false
     dotrain && trainsmagorinsky(;
         params,
         projectorders,
@@ -445,7 +446,7 @@ smag = loadsmagorinsky(outdir, params.nles, params.filters, projectorders)
 # Extract coefficients
 θ_smag = getfield.(smag, :θ)
 
-θ_smag |> x -> reshape(x, :, 2)
+θ_smag |> x -> reshape(x, :, 1)
 
 # Computational time
 getfield.(smag, :comptime)
@@ -596,8 +597,7 @@ with_theme(; palette) do
         for (e, marker, label, color) in [
             (eprior.nomodel, :circle, "No closure", Cycled(1)),
             (eprior.model_prior[:, ifil], :utriangle, "CNN (prior)", Cycled(2)),
-            (eprior.model_post[:, ifil, 1], :rect, "CNN (post, DIF)", Cycled(3)),
-            (eprior.model_post[:, ifil, 2], :diamond, "CNN (post, DCF)", Cycled(4)),
+            (eprior.model_post[:, ifil], :rect, "CNN (post)", Cycled(3)),
         ]
             scatterlines!(params.nles, e; marker, color, label)
         end
