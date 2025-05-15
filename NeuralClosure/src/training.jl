@@ -121,9 +121,6 @@ function create_loss_post(; setup, method, psolver, closure, nsubstep = 1)
     @assert all(==(inside), Iu)
     loss_post(data, θ) =
         sum(data) do (; u, t)
-            @info "len(data) = $(length(data))"
-            @info "size(u) = $(size(u))"
-            @info "size(t) = $(size(t))"
             T = eltype(θ)
             ules = selectdim(u, ndims(u), 1) |> copy
             stepper =
@@ -134,7 +131,6 @@ function create_loss_post(; setup, method, psolver, closure, nsubstep = 1)
                 for isub = 1:nsubstep
                     stepper = timestep(method, stepper, Δt; θ)
                 end
-                @info "t = $(t)\t\tΔt = $(Δt)"   
                 uref = view(u, inside, :, it)
                 ules = view(stepper.u, inside, :)
                 a = sum(abs2, ules - uref)
