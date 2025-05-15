@@ -330,7 +330,7 @@ projectorders = [ProjectOrder.Last]
 # Train
 let
     dotrain = true
-    dotrain = false
+    #dotrain = false
     nepoch = 100
     dotrain && trainpost(;
         params,
