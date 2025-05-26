@@ -541,7 +541,6 @@ let
         )
         epost.nomodel[I, :], epost.nomodel_t_post_inference[I] = err(nothing, tsave)
         @info "Nomodel error $(epost.nomodel[I, :])"
-        exit()
         ## Smagorinsky
         err = create_relerr_post_wt(;
             data,
@@ -623,6 +622,7 @@ end
 # ### Plot a-posteriori errors
 
 with_theme(; palette) do
+    return
     doplot() || return
     fig = Figure(; size = (800, 300))
     linestyles = [:solid, :dash]
