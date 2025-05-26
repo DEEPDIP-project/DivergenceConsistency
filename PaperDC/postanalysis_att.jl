@@ -191,15 +191,30 @@ setups = map(nles -> getsetup(; params, nles), params.nles);
 # All training sessions will start from the same θ₀
 # for a fair comparison.
 
-closure, θ_start = cnn(;
-    setup = setups[1],
-    radii = [2, 2, 2, 2, 2],
-    channels = [24, 24, 24, 24, params.D],
-    activations = [tanh, tanh, tanh, tanh, identity],
-    use_bias = [true, true, true, true, false],
-    rng = Xoshiro(seeds.θ_start),
-);
+closure_0, θ_start, att_st = attentioncnn(
+        T = T,
+        N = 32,
+        D = params.D,
+        data_ch = params.D,
+        radii = [2, 2, 2, 2, 2],
+        channels = [24, 24, 24, 24, params.D],
+        activations = [tanh, tanh, tanh, tanh, identity],
+        use_bias = [true, true, true, true, false],
+        use_attention = [true, false, false, false, false],
+        emb_sizes = [128, 128, 128, 128, 128],
+        patch_sizes = [4, 4, 4, 4, 4],
+        n_heads = [4, 4, 4, 4, 4],
+        sum_attention = [false, false, false, false, false],
+        rng = rng,
+        rng = Xoshiro(seeds.θ_start),
+        use_cuda = false,
+    )
 closure.chain
+# Compute closure term for given parameters
+closure(u, θ) = first(chain(u, θ, att_st))
+
+Here I would like to test the attention model using Syver's approach
+
 
 @info "Initialized CNN with $(length(θ_start)) parameters"
 
@@ -501,7 +516,7 @@ let
 end
 
 let
-    tsave = [5, 10, 50, 100, 200]
+    tsave = [5, 10, 50, 200]
     s = (length(params.nles), length(params.filters), length(projectorders))
     st = (length(params.nles), length(params.filters), length(projectorders), length(tsave))
     epost = (;
@@ -512,7 +527,6 @@ let
         nomodel_t_post_inference = zeros(T, s),
         smag_t_post_inference = zeros(T, s),
         model_t_post_inference = zeros(T, s),
-        nts = tsave,
     )
     for (iorder, projectorder) in enumerate(projectorders),
         (ifil, Φ) in enumerate(params.filters),

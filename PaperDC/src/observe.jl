@@ -96,11 +96,13 @@ function create_relerr_post_wt(; data, setup, method, psolver, closure_model, ns
     (; u, t) = data
     v = selectdim(u, ndims(u), 1) |> copy
     cache = IncompressibleNavierStokes.ode_method_cache(method, setup)
-    function relerr_post(θ)
+    function relerr_post(θ, tsave)
+        es = []
         t0 = time()
         T = eltype(u)
         copyto!(v, selectdim(u, ndims(u), 1))
         stepper = create_stepper(method; setup, psolver, u = v, temp = nothing, t = t[1])
+        u0 = copy(v)
         e = zero(T)
         for it = 2:length(t)
             Δt = (t[it] - t[it-1]) / nsubstep
@@ -113,8 +115,10 @@ function create_relerr_post_wt(; data, setup, method, psolver, closure_model, ns
             a = sum(abs2, ules - uref)
             b = sum(abs2, uref)
             e += sqrt(a) / sqrt(b)
+            if it in tsave
+                push!(es, e/(it-1))
+            end
         end
-
-        return e / (length(t) - 1), time()-t0
+        return es, time()-t0
     end
 end

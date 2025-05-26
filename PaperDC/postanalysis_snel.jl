@@ -500,15 +500,18 @@ let
 end
 
 let
+    tsave = [5, 10, 50, 100, 200]
     s = (length(params.nles), length(params.filters), length(projectorders))
+    st = (length(params.nles), length(params.filters), length(projectorders), length(tsave))
     epost = (;
-        nomodel = zeros(T, s),
-        smag = zeros(T, s),
-        model_prior = zeros(T, s),
-        model_post = zeros(T, s),
+        nomodel = zeros(T, st),
+        smag = zeros(T, st),
+        model_prior = zeros(T, st),
+        model_post = zeros(T, st),
         nomodel_t_post_inference = zeros(T, s),
         smag_t_post_inference = zeros(T, s),
         model_t_post_inference = zeros(T, s),
+        nts = tsave
     )
     for (iorder, projectorder) in enumerate(projectorders),
         (ifil, Φ) in enumerate(params.filters),
@@ -535,7 +538,9 @@ let
             closure_model = nothing,
             nsubstep,
         )
-        epost.nomodel[I], epost.nomodel_t_post_inference[I] = err(nothing)
+        epost.nomodel[I, :], epost.nomodel_t_post_inference[I] = err(nothing, tsave)
+        @info "Nomodel error $(epost.nomodel[I, :])"
+        exit()
         ## Smagorinsky
         err = create_relerr_post_wt(;
             data,
@@ -545,7 +550,8 @@ let
             closure_model = smagorinsky_closure(setup),
             nsubstep,
         )
-        epost.smag[I], epost.smag_t_post_inference[I] = err(θ_smag[I])
+        epost.smag[I,:], epost.smag_t_post_inference[I] = err(θ_smag[I], tsave)
+        @info "Smagorinsky error $(epost.smag[I,:])"
         ## CNN
         err = create_relerr_post_wt(;
             data,
@@ -555,12 +561,15 @@ let
             closure_model = wrappedclosure(closure, setup),
             nsubstep,
         )
-        epost.model_prior[I], _ = err(device(θ_cnn_prior[ig, ifil]))
-        epost.model_post[I], epost.model_t_post_inference[I] = err(device(θ_cnn_post[I]))
+        epost.model_prior[I,:], _ = err(device(θ_cnn_prior[ig, ifil]),tsave)
+        @info "CNN (prior) error $(epost.model_prior[I,:])"
+        epost.model_post[I,:], epost.model_t_post_inference[I] = err(device(θ_cnn_post[I]),tsave)
+        @info "CNN (post) error $(epost.model_post[I,:])"
         clean()
     end
     jldsave(joinpath(outdir, "epost.jld2"); epost...)
 end
+    
 
 epost = namedtupleload(joinpath(outdir, "epost.jld2"))
 
