@@ -147,7 +147,6 @@ params = (;
     bodyforce = (dim, x, y, t) -> (dim == 1) * 5 * sinpi(8 * y),
     issteadybodyforce = true,
     processors = (; log = timelogger(; nupdate = 100)),
-    Δt = T(1e-4),
 )
 
 # DNS seeds
@@ -159,6 +158,7 @@ dns_seeds_test = dns_seeds[ntrajectory:ntrajectory]
 
 # Create data
 docreatedata = false
+#docreatedata = true
 docreatedata && createdata(; params, seeds = dns_seeds, outdir, taskid)
 
 # Computational time
@@ -425,7 +425,7 @@ end
 
 let
     dotrain = true
-    dotrain = false
+    #dotrain = false
     dotrain && trainsmagorinsky(;
         params,
         projectorders,
