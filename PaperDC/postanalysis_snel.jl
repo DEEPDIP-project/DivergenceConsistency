@@ -147,7 +147,6 @@ params = (;
     bodyforce = (dim, x, y, t) -> (dim == 1) * 5 * sinpi(8 * y),
     issteadybodyforce = true,
     processors = (; log = timelogger(; nupdate = 100)),
-    Δt = T(1e-4),
 )
 
 # DNS seeds
