@@ -499,7 +499,7 @@ let
 end
 
 let
-    tsave = [5, 10, 50, 100, 200]
+    tsave = [5, 10, 25, 50, 100, 200, 500, 750, 1000]
     s = (length(params.nles), length(params.filters), length(projectorders))
     st = (length(params.nles), length(params.filters), length(projectorders), length(tsave))
     epost = (;
@@ -510,7 +510,7 @@ let
         nomodel_t_post_inference = zeros(T, s),
         smag_t_post_inference = zeros(T, s),
         model_t_post_inference = zeros(T, s),
-        nts = tsave
+        nts = zeros(T,length(tsave)),
     )
     for (iorder, projectorder) in enumerate(projectorders),
         (ifil, Φ) in enumerate(params.filters),
@@ -526,6 +526,8 @@ let
             u = selectdim(sample.u, ndims(sample.u), it) |> collect |> device,
             t = sample.t[it],
         )
+        epost.nts[:] = [data.t[i] for i in tsave]
+        @info "data.t", epost.nts
         nsubstep = 5
         method = RKProject(params.method, projectorder)
         ## No model

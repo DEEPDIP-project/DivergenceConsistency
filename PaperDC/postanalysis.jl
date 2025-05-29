@@ -501,7 +501,7 @@ let
 end
 
 let
-    tsave = [5, 10, 25, 50, 100, 200, 500]
+    tsave = [5, 10, 25, 50, 100, 200, 500, 750, 1000]
     s = (length(params.nles), length(params.filters), length(projectorders))
     st = (length(params.nles), length(params.filters), length(projectorders), length(tsave))
     epost = (;
@@ -529,6 +529,7 @@ let
             t = sample.t[it],
         )
         epost.nts[:] = [data.t[i] for i in tsave]
+        @info "data.t", epost.nts
         nsubstep = 5
         method = RKProject(params.method, projectorder)
         ## No model
