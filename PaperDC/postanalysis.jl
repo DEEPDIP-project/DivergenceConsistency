@@ -159,7 +159,7 @@ dns_seeds_test = dns_seeds[ntrajectory:ntrajectory]
 
 # Create data
 docreatedata = true
-docreatedata = false
+#docreatedata = false
 docreatedata && createdata(; params, seeds = dns_seeds, outdir, taskid)
 
 # Computational time
@@ -231,7 +231,7 @@ end
 
 let
     dotrain = true
-    dotrain = false
+#    dotrain = false
     nepoch = 1000
     niter = nothing
     dotrain && trainprior(;
@@ -330,7 +330,7 @@ projectorders = [ProjectOrder.Last]
 # Train
 let
     dotrain = true
-    dotrain = false
+#    dotrain = false
     nepoch = 100
     dotrain && trainpost(;
         params,
@@ -426,7 +426,7 @@ end
 
 let
     dotrain = true
-    dotrain = false
+#    dotrain = false
     dotrain && trainsmagorinsky(;
         params,
         projectorders,

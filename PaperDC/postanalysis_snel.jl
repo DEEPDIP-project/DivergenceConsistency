@@ -139,7 +139,7 @@ params = (;
     tsim = T(5),
     savefreq = 50,
     ndns = 4096,
-    nles = [128],
+    nles = [64],
     filters = (FaceAverage(),),
     backend,
     icfunc = (setup, psolver, rng) -> random_field(setup, T(0); kp = 20, psolver, rng),
@@ -147,6 +147,7 @@ params = (;
     bodyforce = (dim, x, y, t) -> (dim == 1) * 5 * sinpi(8 * y),
     issteadybodyforce = true,
     processors = (; log = timelogger(; nupdate = 100)),
+    Δt = 0.00005
 )
 
 # DNS seeds
@@ -158,6 +159,7 @@ dns_seeds_test = dns_seeds[ntrajectory:ntrajectory]
 
 # Create data
 docreatedata = false
+docreatedata = true
 docreatedata && createdata(; params, seeds = dns_seeds, outdir, taskid)
 
 # Computational time
@@ -229,8 +231,8 @@ end
 
 let
     dotrain = true
-    dotrain = false
-    nepoch = 1000
+#    dotrain = false
+    nepoch = 10000
     niter = nothing
     dotrain && trainprior(;
         params,
@@ -328,7 +330,7 @@ projectorders = [ProjectOrder.Last]
 # Train
 let
     dotrain = true
-    dotrain = false
+#    dotrain = false
     nepoch = 100
     dotrain && trainpost(;
         params,
@@ -424,7 +426,7 @@ end
 
 let
     dotrain = true
-    dotrain = false
+#    dotrain = false
     dotrain && trainsmagorinsky(;
         params,
         projectorders,
