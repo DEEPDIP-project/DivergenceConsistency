@@ -168,7 +168,10 @@ function create_les_data(;
     # Initial conditions
     ustart = icfunc(dns, psolver, rng)
 
-    any(u -> any(isnan, u), ustart) && @warn "Initial conditions contain NaNs"
+    while any(u -> any(isnan, u), ustart) 
+	@warn "Initial conditions contain NaNs. Regenerating..."
+    	ustart = icfunc(dns, psolver, rng)
+    end
 
     # Define cache outside `solve_unsteady` to re-use the arrays for the
     # filtered DNS force
