@@ -139,7 +139,7 @@ params = (;
     tsim = T(5),
     savefreq = 50,
     ndns = 4096,
-    nles = [32],
+    nles = [64],
     filters = (FaceAverage(),),
     backend,
     icfunc = (setup, psolver, rng) -> random_field(setup, T(0); kp = 20, psolver, rng),
@@ -162,6 +162,7 @@ docreatedata = false
 docreatedata = true
 docreatedata && createdata(; params, seeds = dns_seeds, outdir, taskid)
 @info "Data Generated"
+@assert 1==2
 
 # Computational time
 docomp = false

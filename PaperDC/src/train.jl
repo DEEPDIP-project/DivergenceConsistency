@@ -20,6 +20,10 @@ createdata(; params, seeds, outdir, taskid) =
             ispath(datadir) || mkpath(datadir)
             f
         end
+        if all(isfile, filenames)
+            @info "All data files $(filenames) already exist. Skipping data creation."
+            return
+        end
         data = create_les_data(; params..., rng = Xoshiro(seed), filenames)
         @info(
             "Trajectory info:",
