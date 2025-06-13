@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=18
 #SBATCH --gpus=1
 #SBATCH --partition=gpu_a100
-#SBATCH --time=05:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mail-type=BEGIN,END
 #SBATCH --array=1-1
 

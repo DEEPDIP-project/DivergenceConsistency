@@ -139,7 +139,7 @@ params = (;
     tsim = T(5),
     savefreq = 50,
     ndns = 4096,
-    nles = [64],
+    nles = [32],
     filters = (FaceAverage(),),
     backend,
     icfunc = (setup, psolver, rng) -> random_field(setup, T(0); kp = 20, psolver, rng),
@@ -159,8 +159,9 @@ dns_seeds_test = dns_seeds[ntrajectory:ntrajectory]
 
 # Create data
 docreatedata = false
-#docreatedata = true
+docreatedata = true
 docreatedata && createdata(; params, seeds = dns_seeds, outdir, taskid)
+@info "Data Generated"
 
 # Computational time
 docomp = false
@@ -231,8 +232,8 @@ end
 
 let
     dotrain = true
-    #dotrain = false
-    nepoch = 10000
+#    dotrain = false
+    nepoch = 50000
     niter = nothing
     dotrain && trainprior(;
         params,
@@ -330,8 +331,8 @@ projectorders = [ProjectOrder.Last]
 # Train
 let
     dotrain = true
-    #dotrain = false
-    nepoch = 100
+#    dotrain = false
+    nepoch = 3000
     dotrain && trainpost(;
         params,
         projectorders,
@@ -426,7 +427,7 @@ end
 
 let
     dotrain = true
-    #dotrain = false
+#    dotrain = false
     dotrain && trainsmagorinsky(;
         params,
         projectorders,
@@ -483,11 +484,11 @@ let
         end
         eprior.model_t_prior_inference[ig, ifil] = compute_t_inference_prior(closure, device(θ_cnn_prior[ig, ifil]), testset...)
     end
-    jldsave(joinpath(outdir, "eprior_nles=$(params.nles).jld2"); eprior...)
+    jldsave(joinpath(outdir, "eprior_nles=$(params.nles[1]).jld2"); eprior...)
 end
 clean()
 
-eprior = namedtupleload(joinpath(outdir, "eprior_nles=$(params.nles).jld2"))
+eprior = namedtupleload(joinpath(outdir, "eprior_nles=$(params.nles[1]).jld2"))
 
 ########################################################################## #src
 
@@ -569,11 +570,11 @@ let
         @info "CNN (post) error $(epost.model_post[I,:])"
         clean()
     end
-    jldsave(joinpath(outdir, "epost_nles=$(params.nles).jld2"); epost...)
+    jldsave(joinpath(outdir, "epost_nles=$(params.nles[1]).jld2"); epost...)
 end
     
 
-epost = namedtupleload(joinpath(outdir, "epost_nles=$(params.nles).jld2"))
+epost = namedtupleload(joinpath(outdir, "epost_nles=$(params.nles[1]).jld2"))
 
 epost.nomodel
 epost.smag
@@ -777,11 +778,11 @@ let
             energyhistory[sym][I] = results.writer.ehist
         end
     end
-    jldsave(joinpath(outdir, "history_nles=$(params.nles).jld2"); energyhistory, divergencehistory)
+    jldsave(joinpath(outdir, "history_nles=$(params.nles[1]).jld2"); energyhistory, divergencehistory)
     clean()
 end
 
-(; divergencehistory, energyhistory) = namedtupleload(joinpath(outdir, "history_nles=$(params.nles).jld2"));
+(; divergencehistory, energyhistory) = namedtupleload(joinpath(outdir, "history_nles=$(params.nles[1]).jld2"));
 
 ########################################################################## #src
 
@@ -1117,12 +1118,12 @@ let
         end
         clean()
     end
-    jldsave("$outdir/solutions_nles=$(params.nles).jld2"; u = utimes, t = times_exact, itime_max_DIF)
+    jldsave("$outdir/solutions_nles=$(params.nles[1]).jld2"; u = utimes, t = times_exact, itime_max_DIF)
 end;
 clean();
 
 # Load solution
-solutions = namedtupleload("$outdir/solutions_nles=$(params.nles).jld2");
+solutions = namedtupleload("$outdir/solutions_nles=$(params.nles[1]).jld2");
 
 ########################################################################## #src
 
