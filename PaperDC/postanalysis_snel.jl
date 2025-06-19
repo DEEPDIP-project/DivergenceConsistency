@@ -104,7 +104,7 @@ seeds = (;
 # ## Hardware selection
 
 # Precision
-T = Float32
+T = Float64
 
 # Device
 if CUDA.functional()
@@ -147,7 +147,7 @@ params = (;
     bodyforce = (dim, x, y, t) -> (dim == 1) * 5 * sinpi(8 * y),
     issteadybodyforce = true,
     processors = (; log = timelogger(; nupdate = 100)),
-    Δt = 0.00005
+    #Δt = 0.00005
 )
 
 # DNS seeds
@@ -233,7 +233,7 @@ end
 
 let
     dotrain = true
-#    dotrain = false
+    #dotrain = false
     nepoch = 50000
     niter = nothing
     dotrain && trainprior(;
@@ -332,7 +332,7 @@ projectorders = [ProjectOrder.Last]
 # Train
 let
     dotrain = true
-#    dotrain = false
+    #dotrain = false
     nepoch = 3000
     dotrain && trainpost(;
         params,
@@ -349,7 +349,7 @@ let
         closure,
         θ_start = θ_cnn_prior,
         opt = Adam(T(1e-4)),
-        #λ = T(5e-8),
+        λ = T(5e-8),
         #scheduler = CosAnneal(; l0 = T(1e-6), l1 = T(1e-4), period = nepoch),
         nunroll_valid = 5,
         nupdate_callback = 10,
@@ -428,7 +428,7 @@ end
 
 let
     dotrain = true
-#    dotrain = false
+    #dotrain = false
     dotrain && trainsmagorinsky(;
         params,
         projectorders,
@@ -503,7 +503,7 @@ let
 end
 
 let
-    tsave = [5, 10, 25, 50, 100, 200, 500, 750, 1000]
+    tsave = [5, 10, 25, 50, 100, 200, 500, 750, 1000, 1500, 2000]
     s = (length(params.nles), length(params.filters), length(projectorders))
     st = (length(params.nles), length(params.filters), length(projectorders), length(tsave))
     epost = (;

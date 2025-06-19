@@ -6,7 +6,7 @@
 #SBATCH --partition=gpu_a100
 #SBATCH --time=10:00:00
 #SBATCH --mail-type=BEGIN,END
-#SBATCH --array=1-1
+#SBATCH --array=1-8
 
 # Note:
 # - gpu_a100: 18 cores
