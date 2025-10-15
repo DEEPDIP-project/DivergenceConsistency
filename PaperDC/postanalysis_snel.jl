@@ -159,10 +159,9 @@ dns_seeds_test = dns_seeds[ntrajectory:ntrajectory]
 
 # Create data
 docreatedata = false
-docreatedata = true
+#docreatedata = true
 docreatedata && createdata(; params, seeds = dns_seeds, outdir, taskid)
 @info "Data Generated"
-@assert 1==2
 
 # Computational time
 docomp = false
